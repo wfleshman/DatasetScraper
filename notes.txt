@@ -1,0 +1,6 @@
+Depends on:
+
+selenium
+pytorch
+
+chromedriver (actual binary, not python)
