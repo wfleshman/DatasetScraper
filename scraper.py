@@ -20,11 +20,6 @@ def get_element(el, count, save_dir):
         with open(name, "wb") as fd:
             fd.write(bytez)
 
-        # test that the file isn't corrupted
-        try:
-            Image.open(name)
-        except:
-            os.remove(name)
     except:
         pass
     
