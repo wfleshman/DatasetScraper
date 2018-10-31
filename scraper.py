@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastai.vision import verify_images
 
 def get_element(el, count, save_dir):
+    """Downloads bytes from url into save_dir"""
     try:
         # path and file extension
         url = json.loads(el.get_attribute('innerHTML'))["ou"]
@@ -24,6 +25,7 @@ def get_element(el, count, save_dir):
         pass
     
 def clean_img_names(path):
+    """Renames the images by number and removes any that are corrupt"""
     img_files = os.listdir(path)
     counter = 0
     for img in img_files:
@@ -35,7 +37,26 @@ def clean_img_names(path):
     verify_images(path, delete=True, max_workers=8)
 
 def scrape(chromedriver, search, save_dir=None, verbose=True):
+    """Scrapes Google Image Search for images.
 
+    Args:
+        chromedriver (str): path to chromedriver executable
+        
+        search (str): search query for Google
+        
+        save_dir (str): path to directory the images will be saved in
+            default is the search string
+        
+        verbose (bool): verbose output or not
+
+    Result:
+        chromedriver will open a Google Chrome browser and navigate to Google
+        Image Search and enter the query. Javascript will then scroll the page
+        so that a few hundred images render. Then the urls of the images will 
+        be collected and the images downloaded to save_dir. Finally, the images
+        will be renamed to [save_dir]_{index}.[ext] and any corrupt image files
+        will be deleted.
+    """
     # set save directory to search terms if not given
     if save_dir is None:
         save_dir = search

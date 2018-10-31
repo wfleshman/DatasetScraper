@@ -20,14 +20,13 @@ class Numpize(nn.Module):
 
 class ImageDataset(Dataset):
     """ Standard pytorch dataset"""
-    def __init__(self, directory, device, img_size=224):
+    def __init__(self, img_paths, device, img_size=224):
         self.loader = transforms.Compose([
-            transforms.Resize((img_size,img_size)),
+            transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406],[0.229, 0.224, 0.225])])
 
-        self.imgs = [os.path.join(directory,fd) for fd in os.listdir(directory) if fd.split('.')[-1] in ['png','jpg','jpeg']]
-        self.directory = directory
+        self.imgs = img_paths
         self.device = device 
         
     def __len__(self):
@@ -39,18 +38,49 @@ class ImageDataset(Dataset):
         return self.loader(img).to(self.device, torch.float)
     
 class Curator:
-    
-    def __init__(self, path):
+    """Jupyter Notebook widget for removing images which are too similar or don't
+        belong.
+
+    Args:
+        img_paths (list): paths to images to curate. Images should be of one class
         
+        img_size (int): images must get resized for processing. Don't change unless
+            you're having memory issues.
+        
+        batch_size (int): images will be processed in batches to limit memory
+            consumption. Increase for faster processing, derease if running out
+            of memory.
+
+    Returns:
+        A Curator instance capable of finding near duplicates or garbage images.
+
+    Methods:
+        duplicate_detection(num_pairs=100): this presents a widget in the Jupyter
+        Notebook which displays pairs of images in order of simularity. Duplicates
+        will be shown first, followed by near duplicates with increasing differences.
+        Remove images interactively until you stop seeing duplicates. The num_pairs
+        argument limits processing to the top [num_pairs] number of pairs. If you
+        have more than 100 duplicate pairs this should be increased, or a new Curator
+        instance should be created after the first pass of removals.
+
+        garbage_detection(): this presents a widget in the Jupyter Notebook which 
+        displays images which are the most dissimilar with the other images in the
+        dataset. Usually, images which don't belong in the set will have high
+        dissimilarity. The images will be presented in order of dissimilarity.
+    """
+    def __init__(self, img_paths, img_size=224, batch_size=16):
+        
+        # images
+        self.img_paths = img_paths
         # gpu or cpu?
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # get our dataset, resize images to 224
-        self.dataset = ImageDataset(path, self.device, 224)
+        self.dataset = ImageDataset(img_paths, self.device, img_size)
         self.n_images = len(self.dataset)
         
         # loader will load them in 16 at a time
-        loader = DataLoader(self.dataset, batch_size=16, shuffle=False)
+        loader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
 
         # I'm gonna use the first few layers from vgg19 to get content simularity
         vgg = models.vgg19(pretrained=True).features.to(self.device).eval()
@@ -90,13 +120,14 @@ class Curator:
         self.results = sorted(list(zip(pairs,mse)), key=lambda x: x[1])
 
     def duplicate_detection(self, num_pairs=100):
-    
+        """ Presents most similar image pairs"""
+
         # go through pairs of images in order of most similar
         paths = []
         for pair,mse in self.results[:num_pairs]:
             img0, img1 = pair
-            path0 = self.dataset.imgs[img0]
-            path1 = self.dataset.imgs[img1]
+            path0 = self.img_paths[img0]
+            path1 = self.img_paths[img1]
 
             if os.path.exists(path0) and os.path.exists(path1):
                 paths = paths + [path0, path1]
@@ -104,7 +135,8 @@ class Curator:
         fd = FileDeleter(paths, batch_size=2)
 
     def garbage_detection(self):    
-    
+        """ Presents most dissimilar images in the dataset"""
+        
         # garbage images are probably the most disimilar in the dataset
         scores = np.zeros(self.n_images)
         for pair,mse in self.results:
@@ -114,7 +146,7 @@ class Curator:
         # get index in reverse order (most similar last)
         paths = []
         for idx in scores.argsort()[::-1]:
-            path = self.dataset.imgs[idx]
+            path = self.img_paths[idx]
             if os.path.exists(path):
                 paths.append(path)
         fd = FileDeleter(paths)
