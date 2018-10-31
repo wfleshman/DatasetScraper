@@ -3,6 +3,7 @@ import json
 import os
 import urllib.request as urllib
 from concurrent.futures import ThreadPoolExecutor
+from PIL import Image
 
 def get_element(el, count, save_dir):
     try:
@@ -15,9 +16,15 @@ def get_element(el, count, save_dir):
         bytez = urllib.urlopen(url, timeout=20).read()
 
         # save file
-        with open(os.path.join(save_dir, save_dir+"_tmp_"+str(count)+"."+ext), "wb") as fd:
-            fd.write(bytez)   
+        name = os.path.join(save_dir, save_dir+"_tmp_"+str(count)+"."+ext)
+        with open(name, "wb") as fd:
+            fd.write(bytez)
 
+        # test that the file isn't corrupted
+        try:
+            Image.open(name)
+        except:
+            os.remove(name)
     except:
         pass
     
