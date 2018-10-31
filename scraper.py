@@ -3,7 +3,7 @@ import json
 import os
 import urllib.request as urllib
 from concurrent.futures import ThreadPoolExecutor
-from PIL import Image
+from fastai.vision import verify_images
 
 def get_element(el, count, save_dir):
     try:
@@ -31,6 +31,8 @@ def clean_img_names(path):
         base = img.split('_')[0]
         os.rename(os.path.join(path,img), os.path.join(path,base+'_'+str(counter)+'.'+ext))
         counter += 1
+        
+    verify_images(path, delete=True, max_workers=8)
 
 def scrape(chromedriver, search, save_dir=None, verbose=True):
 
@@ -62,5 +64,5 @@ def scrape(chromedriver, search, save_dir=None, verbose=True):
             
     browser.close()
     if verbose:
-        print("[*] Renaming files")
+        print("[*] Validating Files")
     clean_img_names(save_dir)

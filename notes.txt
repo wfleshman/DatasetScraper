@@ -1,6 +1,11 @@
-Depends on:
+Things you may not have but need:
+python3.x
 
 selenium
 pytorch
+fastai
+pillow
+numpy
 
 chromedriver (actual binary, not python)
+

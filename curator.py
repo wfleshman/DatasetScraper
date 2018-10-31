@@ -1,24 +1,14 @@
-#!/usr/bin/env python3
-
 import os
 import numpy as np
 from itertools import combinations
-from IPython.display import clear_output
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
-from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.models as models
 from torch.utils.data import Dataset, DataLoader
-
-def clear():
-    """Clears jupyter cell output"""
-    try:
-        clear_output()
-    except:
-        pass
+from fastai.widgets import FileDeleter
+from PIL import Image
 
 class Numpize(nn.Module):
     """ Converts our output into a numpy array"""
@@ -35,7 +25,8 @@ class ImageDataset(Dataset):
             transforms.Resize((img_size,img_size)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406],[0.229, 0.224, 0.225])])
-        self.imgs = os.listdir(directory)
+
+        self.imgs = [os.path.join(directory,fd) for fd in os.listdir(directory) if fd.split('.')[-1] in ['png','jpg','jpeg']]
         self.directory = directory
         self.device = device 
         
@@ -43,7 +34,7 @@ class ImageDataset(Dataset):
         return len(self.imgs)
 
     def __getitem__(self, idx):
-        name = os.path.join(self.directory, self.imgs[idx])
+        name = self.imgs[idx]
         img = Image.open(name).convert('RGB')
         return self.loader(img).to(self.device, torch.float)
     
@@ -94,50 +85,24 @@ class Curator:
             count += vecs.shape[0]
 
         # get the mean squared error between all pairs of image vectors
-        self.pairs = list(combinations(range(self.n_images), 2))
-        mse = np.mean((img_vecs[self.pairs,:][:,0,:] - img_vecs[self.pairs,:][:,1,:])**2,1)
-        self.results = sorted(list(zip(self.pairs,mse)), key=lambda x: x[1])
-        
-        # this is list of files we want to purge
-        self.remove = []
+        pairs = list(combinations(range(self.n_images), 2))
+        mse = np.mean((img_vecs[pairs,:][:,0,:] - img_vecs[pairs,:][:,1,:])**2,1)
+        self.results = sorted(list(zip(pairs,mse)), key=lambda x: x[1])
 
-    def duplicate_detection(self):
+    def duplicate_detection(self, num_pairs=100):
     
         # go through pairs of images in order of most similar
-        for pair,mse in self.results:
+        paths = []
+        for pair,mse in self.results[:num_pairs]:
             img0, img1 = pair
-            
-            # if they've already been marked for removal we can skip
-            if img0 in self.remove or img1 in self.remove:
-                continue
-            
-            img0 = Image.open(os.path.join(self.dataset.directory,self.dataset.imgs[img0])).convert('RGB')
-            img1 = Image.open(os.path.join(self.dataset.directory,self.dataset.imgs[img1])).convert('RGB')
-        
-            plt.subplot(121)
-            plt.imshow(img0)
-            plt.xticks([])
-            plt.yticks([])
-            plt.subplot(122)
-            plt.imshow(img1)
-            plt.xticks([])
-            plt.yticks([])
-            plt.show()
-            menu = "1. Add left image to purge list\n2. Add right image to purge list\n3. Add both images to purge list\n4. Skip\n5. Done with dup detection\n"
-            choice = str(input(menu))
-            if choice == '1':
-                self.remove.append(pair[0])
-            elif choice == '2':
-                self.remove.append(pair[1])
-            elif choice == '3':
-                self.remove = self.remove + list(pair)
-            elif choice == '5':
-                break
-            else:
-                clear()
-                continue
-            clear()
-            
+            path0 = self.dataset.imgs[img0]
+            path1 = self.dataset.imgs[img1]
+
+            if os.path.exists(path0) and os.path.exists(path1):
+                paths = paths + [path0, path1]
+
+        fd = FileDeleter(paths, batch_size=2)
+
     def garbage_detection(self):    
     
         # garbage images are probably the most disimilar in the dataset
@@ -147,34 +112,9 @@ class Curator:
             scores[pair[1]] += mse
         
         # get index in reverse order (most similar last)
+        paths = []
         for idx in scores.argsort()[::-1]:
-            if idx in self.remove:
-                continue
-            
-            img = Image.open(os.path.join(self.dataset.directory,self.dataset.imgs[idx])).convert('RGB')
-        
-            plt.imshow(img)
-            plt.xticks([])
-            plt.yticks([])
-            plt.show()
-            menu = "1. Add image to purge list\n2. Skip\n3. Done with garbage detection\n"
-            choice = str(input(menu))
-            if choice == '1':
-                self.remove.append(idx)
-            elif choice == '3':
-                break
-            else:
-                clear()
-                continue
-            clear()
-
-    def purge(self):
-        # remove the images from the directory if they were added to purge list
-        for img in self.remove:
-            file_name = self.dataset.imgs[img]
-            os.remove(os.path.join(self.dataset.directory,file_name))
-        self.remove = []
-
-
-
-
+            path = self.dataset.imgs[idx]
+            if os.path.exists(path):
+                paths.append(path)
+        fd = FileDeleter(paths)
