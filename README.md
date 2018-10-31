@@ -37,31 +37,6 @@ for i,search in enumerate(search_terms):
     [*] Scraping
     [*] Validating Files
 
-
-
-
-    <div>
-        <style>
-        	/* Turns off some styling */
-        	progress {
-
-            	/* gets rid of default border in Firefox and Opera. */
-            	border: none;
-
-            	/* Needs to be in here for Safari polyfill so background images work as expected. */
-            	background-size: auto;
-            }
-
-            .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
-                background: #F44336;
-            }
-        </style>
-      <progress value='480' class='' max='480', style='width:300px; height:20px; vertical-align: middle;'></progress>
-      100.00% [480/480 00:08<00:00]
-    </div>
-    
-
-
     cannot identify image file '/home/bill/DatasetScraper/teddy/teddy_611.png'
     cannot identify image file '/home/bill/DatasetScraper/teddy/teddy_198.jpg'
     cannot identify image file '/home/bill/DatasetScraper/teddy/teddy_625.png'
@@ -73,36 +48,9 @@ for i,search in enumerate(search_terms):
     [*] Scraping
     [*] Validating Files
 
-
-
-
-    <div>
-        <style>
-        	/* Turns off some styling */
-        	progress {
-
-            	/* gets rid of default border in Firefox and Opera. */
-            	border: none;
-
-            	/* Needs to be in here for Safari polyfill so background images work as expected. */
-            	background-size: auto;
-            }
-
-            .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
-                background: #F44336;
-            }
-        </style>
-      <progress value='415' class='' max='415', style='width:300px; height:20px; vertical-align: middle;'></progress>
-      100.00% [415/415 00:08<00:00]
-    </div>
-    
-
-
     cannot identify image file '/home/bill/DatasetScraper/black/black_614.jpg'
     Done
     
-
-
 
 ```python
 # time to curate
@@ -115,7 +63,7 @@ curator = Curator(path='teddy')
 curator.duplicate_detection()
 ```
 
-![png](output/dup1.png)
+![png](output/dup_1.png)
 
 
 
@@ -124,7 +72,7 @@ curator.duplicate_detection()
 curator.garbage_detection()
 ```
 
-![png](output/garb1.png)
+![png](output/garb_1.png)
 
 ```python
 curator = Curator('black')
@@ -143,7 +91,7 @@ curator.duplicate_detection()
 curator.garbage_detection()
 ```
 
-![png](output/garb2.png)
+![png](output/garb_2.png)
 
 
 
